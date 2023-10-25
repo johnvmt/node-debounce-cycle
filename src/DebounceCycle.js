@@ -22,6 +22,10 @@ class DebounceCycle {
             this.start();
     }
 
+    get attempts() {
+        return this._runAttempts;
+    }
+
     get status() {
         return this._status;
     }
@@ -30,8 +34,8 @@ class DebounceCycle {
      * sleep time before retrying, if attempt fails
      */
     get retry() {
-        if(typeof this._retry === "function")
-            return this._retry();
+        if(typeof this._retry === 'function')
+            return this._retry(this.attempts); // pass number of attempts completed (first will be 1)
         else
             return this._retry;
     }
@@ -40,7 +44,7 @@ class DebounceCycle {
      * Minimum time in ms between start of cycles
      */
     get min() {
-        if(typeof this._min === "function")
+        if(typeof this._min === 'function')
             return this._min();
         else
             return this._min;
@@ -50,7 +54,7 @@ class DebounceCycle {
      * Maximum time in ms between start of cycles, if cycling is in effect
      */
     get max() {
-        if(typeof this._max === "function")
+        if(typeof this._max === 'function')
             return this._max();
         else
             return this._max;
@@ -78,8 +82,8 @@ class DebounceCycle {
      * If value is a function, it will be called each time module.min is accessed
      */
     set max(msOrFunction) {
-        if(msOrFunction !== this._min) {
-            this._min = msOrFunction;
+        if(msOrFunction !== this._max) {
+            this._max = msOrFunction;
 
             if(this.status === DebounceCycle.STATUSES.SLEEPING && this._nextRunRequestSource === DebounceCycle.RUNREQUESTTYPE.MAX) {
                 clearTimeout(this._sleepTimeout);
@@ -129,7 +133,6 @@ class DebounceCycle {
     }
 
     request() {
-        console.log("REQUEST!!");
         let resolvePromise;
         let rejectPromise;
 
@@ -219,11 +222,6 @@ class DebounceCycle {
         }
         else
             this._log('debug', `Conditions not met to request new run. Skipping.`)
-
-        // check if request source is the same as the current one?
-
-        // change to min, if it's not already so it won't be stopped
-
     }
 
     /**
@@ -271,17 +269,25 @@ class DebounceCycle {
         this._status = DebounceCycle.STATUSES.RUNNING;
         this._lastRunStartTime = Date.now();
         try {
-            const result = await this._callback();
-            this._pushCallbackSuccess(result);
+            if(this._attempts === undefined)
+                this._attempts = 0;
+            this._attempts++; // first attempt = 1
 
-            if(this._cycling)
+            const result = await this._callback();
+            this._status = DebounceCycle.STATUSES.STOPPED;
+
+            delete this._attempts; // delete when success
+
+            this._pushCallbackSuccess(result);
+            if(this._cycling) {
+                this._log('debug', 'Run completed and cycling. Requesting new run with MAX source.');
                 this._requestRun(DebounceCycle.RUNREQUESTTYPE.MAX); // cycle
-            else {
-                this._status = DebounceCycle.STATUSES.STOPPED;
-                this._log('debug', `Run completed and not cycling. Stopping.`);
             }
+            else
+                this._log('debug', 'Run completed and not cycling. Stopping.');
         }
         catch(error) {
+            this._status = DebounceCycle.STATUSES.STOPPED;
             // retry
             this._pushCallbackError(error);
             this._requestRun(DebounceCycle.RUNREQUESTTYPE.RETRY);
@@ -290,19 +296,19 @@ class DebounceCycle {
 
     _log(level, ...messageParts) {
         if(this._options.logger)
-            this._options.logger[level](messageParts.join(" "));
+            this._options.logger[level](messageParts.join(' '));
     }
 
     static RUNREQUESTTYPE = Object.freeze({
-        MIN: "MIN",
-        MAX: "MAX",
-        RETRY: "RETRY"
+        MIN: 'MIN',
+        MAX: 'MAX',
+        RETRY: 'RETRY'
     });
 
     static STATUSES = Object.freeze({
-        STOPPED: "STOPPED",
-        SLEEPING: "SLEEPING",
-        RUNNING: "RUNNING"
+        STOPPED: 'STOPPED',
+        SLEEPING: 'SLEEPING',
+        RUNNING: 'RUNNING'
     });
 }
 
