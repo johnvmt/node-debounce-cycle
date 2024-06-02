@@ -56,8 +56,10 @@ class DebounceCycle {
     get max() {
         if(typeof this._max === 'function')
             return this._max();
-        else
+        else if(typeof this._max === 'number' && this._max > 0)
             return this._max;
+        else
+            return undefined;
     }
 
     /**
@@ -170,10 +172,12 @@ class DebounceCycle {
         else {
             const sleepTime = this._sleepTimeFromRequestType(runRequestType);
 
-            if(!this._lastRunStartTime) // no previous run (and no immediate)
-                return sleepTime;
-            else // has previously run
-                return Math.max(0, (this._lastRunStartTime + sleepTime) - Date.now());
+            if(typeof sleepTime === 'number') {
+                if(!this._lastRunStartTime) // no previous run (and no immediate)
+                    return sleepTime;
+                else // has previously run
+                    return Math.max(0, (this._lastRunStartTime + sleepTime) - Date.now());
+            }
         }
     }
 
@@ -185,7 +189,16 @@ class DebounceCycle {
             const timeToRequestedNextRunStartTime = this._timeToNextRunStart(runRequestType); // get requested ms to next start, based on request method and previous run
 
             // if currently sleeping, check if time to next start
-            if(timeToRequestedNextRunStartTime > 0) { // would need to sleep for some time before next start
+            if(timeToRequestedNextRunStartTime === undefined) {
+                this._log('debug', `Sleep time is not set. Stopping.`);
+
+                // if currently sleeping, clear timeout of previously-set sleep
+                if(this._sleepTimeout)
+                    clearTimeout(this._sleepTimeout);
+
+                this._status = DebounceCycle.STATUSES.STOPPED;
+            }
+            else if(timeToRequestedNextRunStartTime > 0) { // would need to sleep for some time before next start
                 this._log('debug', `Sleep time > 0. Compare to currently-sleeping (if any) to determine which should be honored.`);
                 const requestedNextRunStartTime = Date.now() + timeToRequestedNextRunStartTime; // calculate time next run would start, given the request
 
