@@ -203,7 +203,10 @@ class DebounceCycle {
                 const requestedNextRunStartTime = Date.now() + timeToRequestedNextRunStartTime; // calculate time next run would start, given the request
 
                 if(!this._nextRunStartTime || requestedNextRunStartTime < this._nextRunStartTime) { // no next run set, or requested run would start before currently-sleeping request
-                    this._log('debug', `New request will start sooner than previous request (${requestedNextRunStartTime} vs ${this._nextRunStartTime}). Sleep for ${timeToRequestedNextRunStartTime}`);
+                    if(!this._nextRunStartTime)
+                        this._log('debug', `New request scheduled to start at (${requestedNextRunStartTime}. Sleep for ${timeToRequestedNextRunStartTime}.`);
+                    else
+                        this._log('debug', `New request scheduled to start sooner than previous request (${requestedNextRunStartTime} vs ${this._nextRunStartTime}). Sleep for ${timeToRequestedNextRunStartTime}.`);
 
                     // if currently sleeping, clear timeout of previously-set sleep
                     if(this._sleepTimeout)
