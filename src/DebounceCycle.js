@@ -228,7 +228,7 @@ class DebounceCycle {
 
                 if(!this._nextRunStartTime || requestedNextRunStartTime < this._nextRunStartTime) { // no next run set, or requested run would start before currently-sleeping request
                     if(!this._nextRunStartTime)
-                        this._log('debug', `New request scheduled to start at (${requestedNextRunStartTime}. Sleep for ${timeToRequestedNextRunStartTime}.`);
+                        this._log('debug', `New request scheduled to start at ${requestedNextRunStartTime}. Sleep for ${timeToRequestedNextRunStartTime}.`);
                     else
                         this._log('debug', `New request scheduled to start sooner than previous request (${requestedNextRunStartTime} vs ${this._nextRunStartTime}). Sleep for ${timeToRequestedNextRunStartTime}.`);
 
