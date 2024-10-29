@@ -25,7 +25,7 @@ class DebounceCycle {
     }
 
     get attempts() {
-        return this._runAttempts;
+        return this._attempts;
     }
 
     get status() {
