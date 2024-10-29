@@ -6,6 +6,7 @@ class DebounceCycle {
         this._options = {
             immediate: true,
             start: true,
+            jitter: 0,
             ...options
         };
 
@@ -13,6 +14,7 @@ class DebounceCycle {
         this._max = this._options.max;
         this._min = this._options.min;
         this._retry = this._options.retry;
+        this._jitter = this._options.jitter;
 
         this._requestPromises = new Map();
 
@@ -52,14 +54,21 @@ class DebounceCycle {
 
     /**
      * Maximum time in ms between start of cycles, if cycling is in effect
+     * Includes jitter, if it is set
      */
     get max() {
+        let maxWithJitter;
         if(typeof this._max === 'function')
-            return this._max();
+            maxWithJitter = this._max();
         else if(typeof this._max === 'number' && this._max > 0)
-            return this._max;
+            maxWithJitter = this._max;
         else
             return undefined;
+
+        if(this._jitter) {
+            const jitterFactor = Math.random() * 2 - 1;
+            return maxWithJitter + (jitterFactor * this._jitter);
+        }
     }
 
     /**
@@ -86,6 +95,19 @@ class DebounceCycle {
     set max(msOrFunction) {
         if(msOrFunction !== this._max) {
             this._max = msOrFunction;
+
+            if(this.status === DebounceCycle.STATUSES.SLEEPING && this._nextRunRequestSource === DebounceCycle.RUNREQUESTTYPE.MAX) {
+                clearTimeout(this._sleepTimeout);
+                delete this._nextRunStartTime;
+                this._status = DebounceCycle.STATUSES.STOPPED;
+                this._requestRun(DebounceCycle.RUNREQUESTTYPE.MAX);
+            }
+        }
+    }
+
+    set jitter(ms) {
+        if(ms !== this._jitter) {
+            this._jitter = ms;
 
             if(this.status === DebounceCycle.STATUSES.SLEEPING && this._nextRunRequestSource === DebounceCycle.RUNREQUESTTYPE.MAX) {
                 clearTimeout(this._sleepTimeout);
