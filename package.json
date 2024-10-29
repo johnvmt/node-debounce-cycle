@@ -2,7 +2,7 @@
   "name": "debounce-cycle",
   "description": "Run a function on a set interval, with possibility for early runs",
   "type": "module",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "main": "src/DebounceCycle.js",
   "license": "MIT",
   "author": {

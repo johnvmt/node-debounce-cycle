@@ -57,18 +57,20 @@ class DebounceCycle {
      * Includes jitter, if it is set
      */
     get max() {
-        let maxWithJitter;
+        let max;
         if(typeof this._max === 'function')
-            maxWithJitter = this._max();
+            max = this._max();
         else if(typeof this._max === 'number' && this._max > 0)
-            maxWithJitter = this._max;
+            max = this._max;
         else
             return undefined;
 
         if(this._jitter) {
             const jitterFactor = Math.random() * 2 - 1;
-            return maxWithJitter + (jitterFactor * this._jitter);
+            return max + (jitterFactor * this._jitter);
         }
+        else
+            return max;
     }
 
     /**
